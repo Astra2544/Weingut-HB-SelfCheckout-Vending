@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import PaymentScreen from './components/PaymentScreen';
 import './App.css';
 
 const CheckIcon = () => (
@@ -294,16 +295,18 @@ const LoaderIcon = ({ className }) => (
   </svg>
 );
 
-const OpeningScreen = ({ selectedDoor, onReset }) => {
+const SuccessScreen = ({ selectedDoor, onReset }) => {
   const { t } = useLanguage();
-  const [phase, setPhase] = useState('opening');
+  const [phase, setPhase] = useState('success');
 
   React.useEffect(() => {
-    const timer1 = setTimeout(() => setPhase('open'), 2500);
-    const timer2 = setTimeout(() => setPhase('complete'), 4000);
+    const timer1 = setTimeout(() => setPhase('opening'), 2000);
+    const timer2 = setTimeout(() => setPhase('open'), 4000);
+    const timer3 = setTimeout(() => setPhase('complete'), 5500);
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
+      clearTimeout(timer3);
     };
   }, []);
 
@@ -318,6 +321,44 @@ const OpeningScreen = ({ selectedDoor, onReset }) => {
 
       <div className="mt-12 mb-8 text-center">
         <AnimatePresence mode="wait">
+          {phase === 'success' && (
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="flex flex-col items-center"
+            >
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                className="w-20 h-20 rounded-full bg-green-600 flex items-center justify-center mb-6"
+              >
+                <span className="w-10 h-10 text-white"><CheckIcon /></span>
+              </motion.div>
+
+              <h2 className="font-serif text-2xl text-[#2D2A26] mb-2">
+                {t('success.title')}
+              </h2>
+              <p className="text-sm text-[#969088] mb-4">
+                {t('success.subtitle')}
+              </p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="mt-4 px-6 py-4 bg-[#8B2E2E]/10 rounded-xl"
+              >
+                <p className="text-sm text-[#5C5852] mb-1">{t('success.doorInfo')}</p>
+                <p className="text-3xl font-serif text-[#8B2E2E] font-medium">
+                  {t('doorSelect.door')} {selectedDoor}
+                </p>
+              </motion.div>
+            </motion.div>
+          )}
+
           {phase === 'opening' && (
             <motion.div
               key="opening"
@@ -343,11 +384,11 @@ const OpeningScreen = ({ selectedDoor, onReset }) => {
               </motion.div>
 
               <h2 className="font-serif text-2xl text-[#2D2A26]">
-                {t('doorSelect.door')} {selectedDoor} {t('opening.title')}
+                {t('doorSelect.door')} {selectedDoor}
               </h2>
               <p className="text-sm text-[#969088] mt-2 flex items-center gap-2">
                 <LoaderIcon className="w-4 h-4 animate-spin" />
-                {t('opening.wait')}
+                {t('success.opening')}
               </p>
             </motion.div>
           )}
@@ -383,10 +424,10 @@ const OpeningScreen = ({ selectedDoor, onReset }) => {
                 transition={{ delay: 0.4 }}
               >
                 <h2 className="font-serif text-2xl text-[#8B2E2E]">
-                  {t('opening.ready')}
+                  {t('success.ready')}
                 </h2>
-                <p className="text-sm text-[#969088] mt-2">
-                  {t('opening.subtitle')}
+                <p className="text-sm text-[#969088] mt-2 text-center">
+                  {t('doorSelect.door')} {selectedDoor}
                 </p>
               </motion.div>
             </motion.div>
@@ -418,7 +459,7 @@ const OpeningScreen = ({ selectedDoor, onReset }) => {
                 transition={{ delay: 0.2 }}
                 className="font-serif text-3xl text-[#2D2A26]"
               >
-                {t('opening.thanks')}
+                {t('success.thanks')}
               </motion.h2>
 
               <motion.p
@@ -427,7 +468,7 @@ const OpeningScreen = ({ selectedDoor, onReset }) => {
                 transition={{ delay: 0.4 }}
                 className="text-[#969088] mt-2 mb-8"
               >
-                {t('opening.enjoy')}
+                {t('success.enjoy')}
               </motion.p>
 
               <motion.div
@@ -452,7 +493,7 @@ const OpeningScreen = ({ selectedDoor, onReset }) => {
                 onClick={onReset}
                 className="mt-10 btn-secondary rounded-none"
               >
-                {t('opening.newPurchase')}
+                {t('success.newPurchase')}
               </motion.button>
             </motion.div>
           )}
@@ -467,11 +508,13 @@ const SelfCheckoutApp = () => {
   const [selectedDoor, setSelectedDoor] = useState(null);
 
   const handleContinue = () => setScreen('doorSelect');
-  const handleBack = () => setScreen('landing');
+  const handleBackToLanding = () => setScreen('landing');
   const handleDoorSelect = (door) => {
     setSelectedDoor(door);
-    setScreen('opening');
+    setScreen('payment');
   };
+  const handleBackToDoorSelect = () => setScreen('doorSelect');
+  const handlePaymentSuccess = () => setScreen('success');
   const handleReset = () => {
     setSelectedDoor(null);
     setScreen('landing');
@@ -486,10 +529,18 @@ const SelfCheckoutApp = () => {
           <LandingScreen key="landing" onContinue={handleContinue} />
         )}
         {screen === 'doorSelect' && (
-          <DoorSelectScreen key="doorSelect" onSelect={handleDoorSelect} onBack={handleBack} />
+          <DoorSelectScreen key="doorSelect" onSelect={handleDoorSelect} onBack={handleBackToLanding} />
         )}
-        {screen === 'opening' && (
-          <OpeningScreen key="opening" selectedDoor={selectedDoor} onReset={handleReset} />
+        {screen === 'payment' && (
+          <PaymentScreen
+            key="payment"
+            selectedDoor={selectedDoor}
+            onPaymentSuccess={handlePaymentSuccess}
+            onBack={handleBackToDoorSelect}
+          />
+        )}
+        {screen === 'success' && (
+          <SuccessScreen key="success" selectedDoor={selectedDoor} onReset={handleReset} />
         )}
       </AnimatePresence>
     </div>
